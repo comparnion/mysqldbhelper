@@ -1,3 +1,4 @@
+#!/usr/local/bin/python
 import MySQLdb
 import json
 
@@ -9,18 +10,20 @@ def date_handler(obj):
     return obj.isoformat() if hasattr(obj, 'isoformat') else obj
 
 class DatabaseConnection:
-    def __init__(self, host, user, passwd, db):
+    def __init__(self, host, user, passwd, db, charset='utf8'):
         self.host = host
         self.user = user
         self.passwd = passwd
         self.db = db
+        self.charset = charset
 
     def connect(self):
         try:
             self.connection = MySQLdb.connect(host=self.host,
                     user=self.user,
                     passwd=self.passwd,
-                    db=self.db)
+                    db=self.db
+                    charset=self.charset)
 
             self.cur = self.connection.cursor()
             return self.cur
