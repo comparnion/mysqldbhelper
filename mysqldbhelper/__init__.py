@@ -22,7 +22,7 @@ class DatabaseConnection:
             self.connection = MySQLdb.connect(host=self.host,
                     user=self.user,
                     passwd=self.passwd,
-                    db=self.db
+                    db=self.db,
                     charset=self.charset)
 
             self.cur = self.connection.cursor()
