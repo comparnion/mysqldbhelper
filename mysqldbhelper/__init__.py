@@ -26,7 +26,6 @@ class DatabaseConnection:
                     charset=self.charset)
 
             self.cur = self.connection.cursor()
-            return self.cur
         except Exception, e:
             raise
 
@@ -34,35 +33,64 @@ class DatabaseConnection:
         self.connection.close()
         self.cur.close()
 
-    def get_one(self, qry, tpl):
-        try:
-            cur = self.connect()
-            cur.execute(qry + ' LIMIT 1', tpl)
-            result = cur.fetchone()
-            self.disconnect()
-            # unpack tuple if it has only
-            # one element
-            if type(result) is tuple and len(result) == 1:
-                result = result[0]
-            return result
-        except Exception, e:
-            raise
+    def atomize(f):
+        """ @ atomize decorator
+        creates two versions of a function
+        for atomic and not atomic queries"""
 
-    def get_all(self, qry, tpl):
-        try:
-            cur = self.connect()
-            cur.execute(qry, tpl)
-            result = cur.fetchall()
-            self.disconnect()
-            return result
-        except Exception, e:
-            raise
+        def wrapper(*args, **kwargs):
+            def if_atomic(*args, **kwargs):
+                print 'atomic version'
+                db = args[0]
+                try:
+                    db.connect()
+                    result = f(*args, **kwargs)
+                    db.save()
+                    return result
+                except Exception, e:
+                    db.rollback()
+                    raise
 
-    def put(self, qry, tpl):
-        try:
-            cur = self.connect()
-            cur.execute(qry, tpl)
-            self.connection.commit()
-            self.disconnect()
-        except Exception, e:
-            raise
+            if kwargs and kwargs['atomic'] == False:
+                print 'non atomic version'
+                return f(*args, **kwargs)
+            else:
+                return if_atomic(*args, **kwargs)
+        return wrapper
+
+    @atomize
+    def get_one(self, qry, tpl, atomic=True):
+        ''' get a single from from a query
+        limit 1 is automatically added '''
+        self.cur.execute(qry + ' LIMIT 1', tpl)
+        result = self.cur.fetchone()
+        # unpack tuple if it has only
+        # one element
+        # TODO unpack results
+        if type(result) is tuple and len(result) == 1:
+            result = result[0]
+        return result
+
+    @atomize
+    def get_all(self, qry, tpl, atomic=True):
+        ''' get all rows for a query '''
+        self.cur.execute(qry, tpl)
+        result = self.cur.fetchall()
+        return result
+
+    @atomize
+    ''' insert, update or delete query '''
+    def put(self, qry, tpl, atomic=True):
+        self.cur.execute(qry, tpl)
+
+    def start(self):
+        self.connect()
+
+    def rollback(self):
+        #TODO
+        pass
+
+    def save(self):
+        self.connection.commit()
+        self.disconnect()
+
