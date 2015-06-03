@@ -16,6 +16,12 @@ class DatabaseConnection:
         self.passwd = passwd
         self.db = db
         self.charset = charset
+        # runs every query atomically if true
+        # start sets atomic to false so that multiple
+        # queries can be executed
+        # if start is called save needs to be called to commit
+        # transactions
+        self.atomic = True
 
     def connect(self):
         try:
@@ -39,23 +45,22 @@ class DatabaseConnection:
         for atomic and not atomic queries"""
 
         def wrapper(*args, **kwargs):
+            db = args[0]
             def if_atomic(*args, **kwargs):
-                print 'atomic version'
-                db = args[0]
                 try:
                     db.connect()
                     result = f(*args, **kwargs)
-                    db.save()
+                    db.connection.commit()
+                    db.disconnect()
                     return result
                 except Exception, e:
                     db.rollback()
                     raise
 
-            if kwargs and kwargs['atomic'] == False:
-                print 'non atomic version'
-                return f(*args, **kwargs)
-            else:
+            if db.atomic:
                 return if_atomic(*args, **kwargs)
+            else:
+                return f(*args, **kwargs)
         return wrapper
 
     @atomize
@@ -72,25 +77,27 @@ class DatabaseConnection:
         return result
 
     @atomize
-    def get_all(self, qry, tpl, atomic=True):
+    def get_all(self, qry, tpl):
         ''' get all rows for a query '''
         self.cur.execute(qry, tpl)
         result = self.cur.fetchall()
         return result
 
     @atomize
-    ''' insert, update or delete query '''
-    def put(self, qry, tpl, atomic=True):
+    def put(self, qry, tpl):
+        ''' insert, update or delete query '''
         self.cur.execute(qry, tpl)
 
     def start(self):
+        self.atomic = False
         self.connect()
 
     def rollback(self):
-        #TODO
-        pass
+        self.connection.rollback()
+        self.disconnect()
+        self.atomic = True
 
     def save(self):
         self.connection.commit()
         self.disconnect()
-
+        self.atomic = True
