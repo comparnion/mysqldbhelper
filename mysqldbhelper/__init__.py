@@ -64,7 +64,7 @@ class DatabaseConnection:
         return wrapper
 
     @atomize
-    def get_one(self, qry, tpl, atomic=True):
+    def get_one(self, qry, tpl):
         ''' get a single from from a query
         limit 1 is automatically added '''
         self.cur.execute(qry + ' LIMIT 1', tpl)
