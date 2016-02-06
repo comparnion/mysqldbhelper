@@ -64,6 +64,7 @@ class DatabaseConnection:
         return wrapper
 
     @atomize
+    #TODO tpl should be optional ()
     def get_one(self, qry, tpl):
         ''' get a single from from a query
         limit 1 is automatically added '''

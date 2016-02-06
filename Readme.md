@@ -48,3 +48,5 @@ except Exception, e:
     db.rollback()
     raise
 ```
+
+Used at [Comparnion.com](https://comparnion.com)
