@@ -6,4 +6,5 @@ setup(name='mysqldbhelper',
     description='A simple wrapper over mysqldb',
     url='https://github.com/comparnion/mysqldbhelper',
     author='Maxwel Dsouza',
-    author_email='')
+    keywords=['mysql', 'mysqldb', 'wrapper'],
+    author_email='contact@comparnion.com')
